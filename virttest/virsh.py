@@ -28,9 +28,8 @@ import re
 import weakref
 import time
 import select
-import base64
-import aexpect
 
+import aexpect
 from avocado.utils import path
 from avocado.utils import process
 
@@ -3607,25 +3606,19 @@ def secret_get_value(uuid, options=None, **dargs):
     return command(cmd, **dargs)
 
 
-def secret_set_value(uuid, password, options=None, encode=False, **dargs):
+def secret_set_value(uuid, base64, options=None, **dargs):
     """
     Set a secret value
 
     :param uuid: secret UUID
-    :param password: secret value
-    :param encode: if False, that means you've already provided a base64-encoded
-                   password. if True, will base64-encode password before use it.
+    :param base64: base64-encoded secret value
     :return: CmdResult object.
     """
     cmd = "secret-set-value --secret %s" % uuid
-    if password:
-        if encode:
-            cmd += " --base64 %s" % base64.b64encode(password)
-        else:
-            cmd += " --base64 %s" % password
+    if base64:
+        cmd += " --base64 %s" % base64
     if options:
         cmd += " --%s" % options
-
     return command(cmd, **dargs)
 
 
@@ -4069,6 +4062,21 @@ def blkdeviotune(name, device=None, options=None,
     return command(cmd, **dargs)
 
 
+def perf(domain="", options="", events="", **dargs):
+    """
+    Enable or disable perf events
+
+    :param domain: Domain name, id
+    :param options: --enable|--disable
+    :param events: perf event names seperated by comma
+    :param dargs: Standardized virsh function API keywords
+    :return: CmdResult instance
+    """
+
+    cmd = "perf %s %s %s" % (domain, options, events)
+    return command(cmd, **dargs)
+
+
 def domstats(domains="", options="", **dargs):
     """
     Get statistics about one or multiple domains
@@ -4089,7 +4097,7 @@ def freepages(cellno=None, pagesize=None, options="", **dargs):
     :param cellno: NUMA cell number
     :param pagesize: Page size (in kibibytes)
     :param options: Extra options
-    :param dargs: Standardized virsh function API keywords
+    :param dargs: Standardized virsh function API keywyyords
     :return: CmdResult instance
     """
     cmd = "freepages %s" % options
