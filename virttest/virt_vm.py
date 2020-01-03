@@ -1472,17 +1472,19 @@ class BaseVM(object):
                 cmd += "cd /sys/devices/system/node/node%s/;" % node
                 cmd += "for i in `ls -d memory*`;"
             else:
-                cmd = "count=0;cd /sys/devices/system/memory/;for i in `ls`;"
+                cmd = "count=0;cd /sys/devices/system/memory/;for i in `ls -d memory*`;"
             if online == 'yes':
                 cmd += "do [ -f $i/online ] && a=$(<$i/online) && "
             else:
                 cmd += "do [ -f $i/online ] && a=1 && "
             cmd += "count=$(( $count + $a ));a=0;done;echo $count"
             output = session.cmd_status_output(cmd, timeout=360)
+            logging.debug("output:%s",output)
             # Handle memory less numa nodes
             if "ls: cannot access 'memory*':" in output[1]:
                 no_memblocks = 0
             else:
+                logging.debug("outputp[1]:%s",output[1])
                 no_memblocks = int(output[1])
             cmd = "cat /sys/devices/system/memory/block_size_bytes"
             block_size = int(session.cmd_output(cmd), 16)
