@@ -1714,8 +1714,7 @@ class VMCPUXML(base.LibvirtXMLBase):
 
     # Must copy these here or there will be descriptor problems
     __slots__ = ('model', 'vendor', 'feature_list', 'mode', 'match',
-                 'fallback', 'topology', 'numa_cell', 'check',
-                 'cache', 'vendor_id')
+                 'fallback', 'topology',  'check', 'cache', 'vendor_id')
 
     def __init__(self, virsh_instance=base.virsh):
         """
@@ -1767,11 +1766,6 @@ class VMCPUXML(base.LibvirtXMLBase):
                                  forbidden=[],
                                  parent_xpath='/',
                                  tag_name='topology')
-        accessors.XMLElementList(property_name="numa_cell",
-                                 libvirtxml=self,
-                                 parent_xpath='numa',
-                                 marshal_from=self.marshal_from_cell,
-                                 marshal_to=self.marshal_to_cell)
         accessors.XMLElementDict(property_name="cache",
                                  libvirtxml=self,
                                  forbidden=[],
@@ -1783,29 +1777,196 @@ class VMCPUXML(base.LibvirtXMLBase):
         super(VMCPUXML, self).__init__(virsh_instance=virsh_instance)
         self.xml = '<cpu/>'
 
-    @staticmethod
-    def marshal_from_cell(item, index, libvirtxml):
-        """
-        Convert a dict to cell tag and attributes.
-        """
-        del index
-        del libvirtxml
-        if not isinstance(item, dict):
-            raise xcepts.LibvirtXMLError("Expected a dictionary of cell "
-                                         "attributes, not a %s"
-                                         % str(item))
-        return ('cell', dict(item))
+    # Sub-element of cpu/numa
+    class CellXML(VMXML):
 
-    @staticmethod
-    def marshal_to_cell(tag, attr_dict, index, libvirtxml):
+        """cell element of numa"""
+
+        __slots__ = ('id', 'cpus', 'memory', 'unit', 'discard', 'memAccess')
+
+        def __init__(self, virsh_instance=base.virsh):
+            """
+            Create new CellXML instance
+            """
+            accessors.XMLAttribute(property_name="id",
+                                   libvirtxml=self,
+                                   forbidden=[],
+                                   parent_xpath='/',
+                                   tag_name='cell',
+                                   attribute='id')
+            accessors.XMLAttribute(property_name="cpus",
+                                   libvirtxml=self,
+                                   forbidden=[],
+                                   parent_xpath='/',
+                                   tag_name='cell',
+                                   attribute='cpus')
+            accessors.XMLAttribute(property_name="memory",
+                                   libvirtxml=self,
+                                   forbidden=[],
+                                   parent_xpath='/',
+                                   tag_name='cell',
+                                   attribute='memory')
+            accessors.XMLAttribute(property_name="unit",
+                                   libvirtxml=self,
+                                   forbidden=[],
+                                   parent_xpath='/',
+                                   tag_name='cell',
+                                   attribute='unit')
+            accessors.XMLAttribute(property_name="discard",
+                                   libvirtxml=self,
+                                   forbidden=[],
+                                   parent_xpath='/',
+                                   tag_name='cell',
+                                   attribute='discard')
+            accessors.XMLAttribute(property_name="memAccess",
+                                   libvirtxml=self,
+                                   forbidden=[],
+                                   parent_xpath='/',
+                                   tag_name='cell',
+                                   attribute='memAccess')
+            super(VMCPUXML.CellXML, self).__init__(
+                virsh_instance=virsh_instance)
+
+        def update(self, attr_dict):
+            for attr, value in list(attr_dict.items()):
+                setattr(self, attr, value)
+
+        class CellCacheXML(VMXML):
+
+            """Cell element of cache"""
+
+            __slots__ = ('level', 'associativity', 'policy',
+                         'size_value', 'size_unit', 'line_value', 'line_unit')
+
+            def __init__(self, virsh_instance=base.virsh):
+                """
+                Create new CellCacheXML instance
+                """
+                accessors.XMLAttribute(property_name="level",
+                                       libvirtxml=self,
+                                       forbidden=[],
+                                       parent_xpath='/',
+                                       tag_name='cache',
+                                       attribute='level')
+                accessors.XMLAttribute(property_name="associativity",
+                                       libvirtxml=self,
+                                       forbidden=[],
+                                       parent_xpath='/',
+                                       tag_name='cache',
+                                       attribute='associativity')
+                accessors.XMLAttribute(property_name="policy",
+                                       libvirtxml=self,
+                                       forbidden=[],
+                                       parent_xpath='/',
+                                       tag_name='cache',
+                                       attribute='policy')
+                accessors.XMLAttribute(property_name="size_value",
+                                       libvirtxml=self,
+                                       forbidden=[],
+                                       parent_xpath='/',
+                                       tag_name='size',
+                                       attribute='value')
+                accessors.XMLAttribute(property_name="size_unit",
+                                       libvirtxml=self,
+                                       forbidden=[],
+                                       parent_xpath='/',
+                                       tag_name='size',
+                                       attribute='unit')
+                accessors.XMLAttribute(property_name="line_value",
+                                       libvirtxml=self,
+                                       forbidden=[],
+                                       parent_xpath='/',
+                                       tag_name='line',
+                                       attribute='value')
+                accessors.XMLAttribute(property_name="line_unit",
+                                       libvirtxml=self,
+                                       forbidden=[],
+                                       parent_xpath='/',
+                                       tag_name='line',
+                                       attribute='unit')
+                super(VMCPUXML.CellXML.CellCacheXML, self).__init__(
+                    virsh_instance=virsh_instance)
+                self.xml = '<cache/>'
+
+        def get_cellcache(self):
+            """
+                Get CellCacheXML from xml
+
+                :return: CellCacheXML instance
+            """
+            xmltreefile = self.__dict_get__('xml')
+            try:
+                cellcache_root = xmltreefile.reroot('/cache')
+            except KeyError as detail:
+                raise xcepts.LibvirtXMLError(detail)
+            cellcachexml = VMCPUXML.CellXML.CellCacheXML(virsh_instance=self.__dict_get__('virsh'))
+            cellcachexml.xmltreefile = cellcache_root
+            return cellcachexml
+
+        def set_cellcache(self, value):
+            """
+                Set cellcache element in xml
+
+                :param value: the value of cellcache
+            """
+            if not issubclass(type(value), VMCPUXML.CellXML.CellCacheXML):
+                raise xcepts.LibvirtXMLError("value must be a cache or subclass")
+            xmltreefile = self.__dict_get__('xml')
+            # NodeXML root element is whole Node element tree
+            root = xmltreefile.find("/cell")
+            root.append(value.xmltreefile.getroot())
+            xmltreefile.write()
+
+        def del_cellcache(self):
+            """
+                Delete cellcache element from xml
+            """
+            xmltreefile = self.__dict_get__('xml')
+            element = xmltreefile.find('/cache')
+            if element is not None:
+                xmltreefile.remove(element)
+                xmltreefile.write()
+
+    def get_cell(self):
         """
-        Convert a cell tag and attributes to a dict.
+            Get CellXML from xml
+
+            :return: CellXML instance
         """
-        del index
-        del libvirtxml
-        if tag != 'cell':
-            return None
-        return dict(attr_dict)
+
+        xmltreefile = self.__dict_get__('xml')
+        try:
+            cell_root = xmltreefile.reroot('/cell')
+        except KeyError as detail:
+            raise xcepts.LibvirtXMLError(detail)
+        cellxml = VMCPUXML.CellXML(virsh_instance=self.__dict_get__('virsh'))
+        cellxml.xmltreefile = cell_root
+        return cellxml
+
+    def set_cell(self, value):
+        """
+            Set cell element in xml
+
+            :param value: the instance of CellXML
+        """
+        if not issubclass(type(value), VMCPUXML.CellXML):
+            raise xcepts.LibvirtXMLError("value must be a cell or subclass")
+        xmltreefile = self.__dict_get__('xml')
+        logging.debug("xmltreefile:%s" % xmltreefile)
+        # NodeXML root element is whole Node element tree
+        root = xmltreefile.find("/numa")
+        root.append(value.xmltreefile.find('/cell'))
+        xmltreefile.write()
+
+    def del_cell(self):
+        """
+            Delete cell element from xml
+        """
+        xmltreefile = self.__dict_get__('xml')
+        element = xmltreefile.find('/cell')
+        if element is not None:
+            xmltreefile.remove(element)
+            xmltreefile.write()
 
     def get_feature_list(self):
         """
@@ -1931,7 +2092,6 @@ class VMCPUXML(base.LibvirtXMLBase):
                          for name in f_list]
         for feature_name in feature_names:
             cpu_xml.add_feature(feature_name)
-
         return cpu_xml
 
 
