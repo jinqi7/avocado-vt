@@ -6,6 +6,7 @@ http://libvirt.org/formatdomain.html
 
 import logging
 
+from virttest.libvirt_xml import xcepts
 from virttest.libvirt_xml import vm_xml
 from virttest.utils_libvirt import libvirt_vmxml
 
@@ -38,9 +39,10 @@ def add_cpu_settings(vmxml, params):
     else:
         cpu_xml = vm_xml.VMCPUXML()
 
-    if cpu_xml.xmltreefile.find('mode'):
+    try:
         cpu_mode = cpu_xml.mode
-    else:
+    except xcepts.LibvirtXMLNotFoundError:
+        logging.debug("Can not find any mode tag, now create one.")
         cpu_mode = params.get("cpuxml_cpu_mode", "host-model")
 
     if cpu_xml.xmltreefile.find("model"):
