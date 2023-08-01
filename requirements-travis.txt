@@ -1,4 +1,4 @@
-Sphinx==1.3b1
+Sphinx==3.3.0
 # inspektor (static and style checks)
 pylint==1.9.3; python_version <= '2.7'
 pylint==2.3.0; python_version >= '3.4'
